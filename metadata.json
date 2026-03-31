@@ -1,0 +1,5 @@
+{
+  "name": "Reading Pod Control System",
+  "description": "A futuristic control interface for a smart reading pod, featuring environment, seat, desk, and door controls with a focus mode timer.",
+  "requestFramePermissions": []
+}
