@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Timer, Pause, Square, BarChart3, PlusCircle, CheckCircle, Sparkles, Loader2 } from 'lucide-react';
+import { Timer, Pause, Play, Square, BarChart3, PlusCircle, CheckCircle, Sparkles, Loader2 } from 'lucide-react';
 import { FOCUS_PRESETS } from '../constants';
 import { cn } from '../lib/utils';
 import { GoogleGenAI } from "@google/genai";
@@ -11,6 +11,32 @@ interface FocusViewProps {
 export default function FocusView({ onExit }: FocusViewProps) {
   const [summary, setSummary] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(true);
+  const [activePresetId, setActivePresetId] = useState<string>(FOCUS_PRESETS[1].id);
+
+  // Timer and Progress State
+  const [seconds, setSeconds] = useState(45 * 60); // Start at 45 mins for demo
+  const [isPaused, setIsPaused] = useState(false);
+  const goalMinutes = 60;
+  const goalWords = goalMinutes * 250; // Assuming 250 words per minute
+
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setSeconds(s => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPaused]);
+
+  const formatTime = (totalSeconds: number) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const wordsRead = Math.floor((seconds / 60) * 250);
+  const minutesRead = Math.floor(seconds / 60);
+  const progressPercent = Math.min(100, (seconds / (goalMinutes * 60)) * 100);
 
   useEffect(() => {
     const generateSummary = async () => {
@@ -33,16 +59,56 @@ export default function FocusView({ onExit }: FocusViewProps) {
   }, []);
 
   return (
-    <div className="w-full h-full p-12 relative flex flex-col justify-between bg-[radial-gradient(circle_at_50%_50%,_rgba(255,85,69,0.03)_0%,_transparent_70%)]">
-      {/* Center Focus Timer */}
-      <section className="flex flex-col items-center justify-center flex-1">
+    <div className="w-full h-full relative overflow-hidden bg-black">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        {FOCUS_PRESETS.map(preset => (
+          <img 
+            key={preset.id}
+            src={preset.image} 
+            alt="" 
+            className={cn(
+              "absolute inset-0 w-full h-full object-cover blur-[80px] scale-125 transition-opacity duration-1000 ease-in-out",
+              preset.id === activePresetId ? "opacity-40" : "opacity-0"
+            )}
+            referrerPolicy="no-referrer"
+          />
+        ))}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,85,69,0.05)_0%,_transparent_70%)]" />
+      </div>
+
+      <div className="relative z-10 w-full h-full p-12 flex flex-col justify-between">
+        {/* Center Focus Timer */}
+        <section className="flex flex-col items-center justify-center flex-1 w-full max-w-5xl mx-auto">
         <h2 className="text-zinc-500 text-xs font-bold tracking-[0.5em] mb-4 uppercase opacity-60">Focus Session</h2>
         <div className="text-[14rem] font-headline font-extralight tracking-tighter leading-none text-white timer-glow select-none">
-          00:45:00
+          {formatTime(seconds)}
         </div>
+        
+        {/* Reading Progress Indicator */}
+        <div className="w-full max-w-2xl mt-12 flex flex-col gap-4">
+          <div className="flex justify-between text-sm font-bold tracking-widest uppercase text-zinc-500">
+            <span>Reading Progress</span>
+            <span className="text-primary">{Math.round(progressPercent)}%</span>
+          </div>
+          <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary shadow-[0_0_20px_rgba(255,85,69,0.8)] transition-all duration-1000 ease-linear"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs font-medium text-zinc-600 uppercase tracking-wider">
+            <span>{wordsRead.toLocaleString()} words read</span>
+            <span>Goal: {goalWords.toLocaleString()} words</span>
+          </div>
+        </div>
+
         <div className="flex gap-10 mt-12">
-          <button className="w-20 h-20 rounded-full glass-panel flex items-center justify-center text-white hover:bg-white/15 transition-all active:scale-90 border border-white/10">
-            <Pause className="w-10 h-10" />
+          <button 
+            onClick={() => setIsPaused(!isPaused)}
+            className="w-20 h-20 rounded-full glass-panel flex items-center justify-center text-white hover:bg-white/15 transition-all active:scale-90 border border-white/10"
+          >
+            {isPaused ? <Play className="w-10 h-10 ml-1" /> : <Pause className="w-10 h-10" />}
           </button>
           <button 
             onClick={onExit}
@@ -63,16 +129,19 @@ export default function FocusView({ onExit }: FocusViewProps) {
           </div>
           <div className="flex justify-between items-end mb-6">
             <div>
-              <div className="text-4xl font-headline font-bold text-on-surface">1,248</div>
+              <div className="text-4xl font-headline font-bold text-on-surface">{wordsRead.toLocaleString()}</div>
               <div className="text-[10px] text-zinc-500 font-bold mt-2 uppercase tracking-wide">本次阅读字数</div>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-headline font-bold text-on-surface">114</div>
+              <div className="text-4xl font-headline font-bold text-on-surface">{minutesRead}</div>
               <div className="text-[10px] text-zinc-500 font-bold mt-2 uppercase tracking-wide">已累计分钟</div>
             </div>
           </div>
           <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-            <div className="h-full bg-primary w-2/3 shadow-[0_0_15px_rgba(255,180,170,0.6)]" />
+            <div 
+              className="h-full bg-primary shadow-[0_0_15px_rgba(255,180,170,0.6)] transition-all duration-1000 ease-linear" 
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
         </div>
 
@@ -83,16 +152,17 @@ export default function FocusView({ onExit }: FocusViewProps) {
             {FOCUS_PRESETS.map((preset) => (
               <div 
                 key={preset.id}
+                onClick={() => setActivePresetId(preset.id)}
                 className={cn(
                   "flex-1 relative group cursor-pointer overflow-hidden rounded-3xl aspect-[4/5] transition-all active:scale-95 border",
-                  preset.id === 'study' ? "ring-2 ring-primary border-transparent" : "border-white/5"
+                  preset.id === activePresetId ? "ring-2 ring-primary border-transparent" : "border-white/5"
                 )}
               >
                 <img 
                   alt={preset.name} 
                   className={cn(
                     "absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110",
-                    preset.id === 'study' ? "opacity-70" : "opacity-40"
+                    preset.id === activePresetId ? "opacity-70" : "opacity-40"
                   )} 
                   src={preset.image} 
                   referrerPolicy="no-referrer"
@@ -102,7 +172,7 @@ export default function FocusView({ onExit }: FocusViewProps) {
                   <div className="text-xs font-bold text-white">{preset.name}</div>
                   <div className="text-[8px] text-zinc-400 font-medium tracking-tighter">{preset.label}</div>
                 </div>
-                {preset.id === 'study' && (
+                {preset.id === activePresetId && (
                   <div className="absolute top-3 right-3">
                     <CheckCircle className="w-4 h-4 text-primary fill-current" />
                   </div>
@@ -154,6 +224,7 @@ export default function FocusView({ onExit }: FocusViewProps) {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

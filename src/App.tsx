@@ -24,6 +24,7 @@ import DeskView from './components/DeskView';
 import EnvironmentView from './components/EnvironmentView';
 import DoorView from './components/DoorView';
 import FocusView from './components/FocusView';
+import HelpView from './components/HelpView';
 
 import { PodProvider } from './context/PodContext';
 
@@ -164,11 +165,12 @@ function AppContent() {
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 className="w-full h-full"
               >
-                {activeScreen === 'home' && <HomeView onEnterFocus={() => setActiveScreen('focus')} />}
+                {activeScreen === 'home' && <HomeView onEnterFocus={() => setActiveScreen('focus')} onNavigate={(screen) => setActiveScreen(screen as any)} />}
                 {activeScreen === 'seat' && <SeatView />}
                 {activeScreen === 'desk' && <DeskView />}
                 {activeScreen === 'environment' && <EnvironmentView />}
                 {activeScreen === 'door' && <DoorView />}
+                {activeScreen === 'help' && <HelpView />}
                 {activeScreen === 'focus' && <FocusView onExit={() => setActiveScreen('home')} />}
               </motion.div>
             </AnimatePresence>

@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Sparkles, BookOpen, BellOff, Bed } from 'lucide-react';
-import { SCENE_MODES } from '../constants';
+import { SCENE_MODES, ENVIRONMENT_PRESETS } from '../constants';
 import { cn } from '../lib/utils';
 import { usePod } from '../context/PodContext';
 import { motion } from 'motion/react';
+import PodModel from './PodModel';
 
 interface HomeViewProps {
   onEnterFocus: () => void;
+  onNavigate?: (screen: string) => void;
 }
 
 const iconMap: Record<string, any> = {
@@ -16,8 +18,8 @@ const iconMap: Record<string, any> = {
   Bed
 };
 
-export default function HomeView({ onEnterFocus }: HomeViewProps) {
-  const { state, applySceneMode, setLightBrightness, setSeatAngle, setDeskHeight } = usePod();
+export default function HomeView({ onEnterFocus, onNavigate }: HomeViewProps) {
+  const { state, applySceneMode, applyEnvironmentPreset, setLightBrightness, setSeatAngle, setDeskHeight } = usePod();
 
   return (
     <div className="w-full h-full p-12 grid grid-cols-12 gap-8 relative overflow-hidden">
@@ -73,22 +75,17 @@ export default function HomeView({ onEnterFocus }: HomeViewProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,180,170,0.05)_0%,transparent_70%)]" />
         <div className="relative w-full h-[480px] flex items-center justify-center">
           <div className="relative w-full h-full flex items-center justify-center holographic-glow">
-            <motion.img 
-              key={state.currentPreset}
-              initial={{ opacity: 0, scale: 1 }}
-              animate={{ opacity: 0.9, scale: 1.1 }}
-              transition={{ duration: 0.8 }}
-              alt="Space Pod Visual" 
-              className="w-full h-full object-contain pod-shadow" 
-              src="https://lh3.googleusercontent.com/aida/ADBb0uiBqYJJBvUcmsODzkd8Fotgni0f1fkmyYvE739M3xTKKv0GeSwnEadSyOCCR8vjLzVk1J3JWm6Ploej6fvIxor9qHM63bCcnDyzHrTn_7i2uR4Ya15mlMW3XAUp_qug7fTuokF7gZ4-hYzRxWmJeaON9Xc4Fj0tBjxYORuewnRCagjnMnbZSnLS8JnMwzLQRGAcrAKJElkQkSdymwLZ1uht-_eoeKMRIJ2f_jveQgEnqzRM_wyhkM-eO9jcC4EVe4iJAc_WYXfMoao" 
-              referrerPolicy="no-referrer"
-            />
+            <Suspense fallback={
+              <div className="text-primary font-mono text-sm animate-pulse">Loading 3D Model...</div>
+            }>
+              <PodModel state={state} onNavigate={onNavigate} />
+            </Suspense>
             
             {/* Interactive Hotspots */}
             <motion.div 
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-[48%] left-[52%] group cursor-pointer z-20"
+              className="absolute top-[48%] left-[52%] group cursor-pointer z-20 pointer-events-none"
             >
               <div className="w-4 h-4 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_rgba(255,180,170,1)]" />
@@ -155,17 +152,20 @@ export default function HomeView({ onEnterFocus }: HomeViewProps) {
           <div className="mt-2 p-4 rounded-xl bg-white/5 border border-white/5 backdrop-blur-md">
             <p className="text-[9px] text-on-surface/40 uppercase tracking-widest mb-3">环境预设</p>
             <div className="grid grid-cols-2 gap-2">
-              {['温暖木质', '清爽薄荷', '深邃星空', '晨间极光'].map((env) => (
+              {ENVIRONMENT_PRESETS.map((env) => (
                 <motion.button 
-                  key={env}
+                  key={env.id}
+                  onClick={() => applyEnvironmentPreset(env.id)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={cn(
-                    "py-2 rounded-lg text-[10px] font-bold transition-all",
-                    env === '温暖木质' ? "bg-primary/20 border border-primary/30 text-primary" : "bg-white/5 border border-white/5 text-on-surface/60 hover:bg-white/10"
+                    "py-2 rounded-lg text-[10px] font-bold transition-all border",
+                    state.activeEnvironment === env.id 
+                      ? "bg-primary/20 border-primary/30 text-primary shadow-[0_0_10px_rgba(255,180,170,0.2)]" 
+                      : "bg-white/5 border-white/5 text-on-surface/60 hover:bg-white/10"
                   )}
                 >
-                  {env}
+                  {env.name}
                 </motion.button>
               ))}
             </div>

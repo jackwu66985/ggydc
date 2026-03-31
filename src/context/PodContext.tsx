@@ -9,10 +9,13 @@ interface PodState {
   lightBrightness: number;
   activeSound: string;
   currentPreset: string;
+  activeEnvironment: string;
   temperature: number;
   humidity: number;
   co2: number;
   noise: number;
+  fanSpeed: number;
+  privacyLevel: number;
 }
 
 interface PodContextType {
@@ -25,7 +28,9 @@ interface PodContextType {
   setLightBrightness: (val: number) => void;
   setActiveSound: (val: string) => void;
   setCurrentPreset: (val: string) => void;
+  setPrivacyLevel: (val: number) => void;
   applySceneMode: (modeId: string) => void;
+  applyEnvironmentPreset: (envId: string) => void;
   updateEnv: (key: keyof PodState, val: any) => void;
 }
 
@@ -41,10 +46,13 @@ export function PodProvider({ children }: { children: ReactNode }) {
     lightBrightness: 82,
     activeSound: 'rain',
     currentPreset: 'deep-focus',
+    activeEnvironment: 'warm-wood',
     temperature: 24.5,
     humidity: 48,
     co2: 412,
     noise: 32,
+    fanSpeed: 75,
+    privacyLevel: 100,
   });
 
   const setIsLocked = (isLocked: boolean) => setState(s => ({ ...s, isLocked }));
@@ -55,6 +63,7 @@ export function PodProvider({ children }: { children: ReactNode }) {
   const setLightBrightness = (lightBrightness: number) => setState(s => ({ ...s, lightBrightness }));
   const setActiveSound = (activeSound: string) => setState(s => ({ ...s, activeSound }));
   const setCurrentPreset = (currentPreset: string) => setState(s => ({ ...s, currentPreset }));
+  const setPrivacyLevel = (privacyLevel: number) => setState(s => ({ ...s, privacyLevel }));
   
   const applySceneMode = (modeId: string) => {
     let newState = { ...state, currentPreset: modeId };
@@ -62,14 +71,33 @@ export function PodProvider({ children }: { children: ReactNode }) {
       case 'deep-focus':
         newState = { ...newState, seatAngle: 115, deskHeight: 75, lightBrightness: 85, activeSound: 'rain' };
         break;
-      case 'work':
+      case 'casual-reading':
         newState = { ...newState, seatAngle: 105, deskHeight: 72, lightBrightness: 100, activeSound: 'library' };
         break;
-      case 'relax':
+      case 'silence-focus':
         newState = { ...newState, seatAngle: 145, deskHeight: 65, lightBrightness: 40, activeSound: 'forest' };
         break;
-      case 'sleep':
+      case 'power-nap':
         newState = { ...newState, seatAngle: 170, deskHeight: 60, lightBrightness: 5, activeSound: 'campfire', isLocked: true };
+        break;
+    }
+    setState(newState);
+  };
+
+  const applyEnvironmentPreset = (envId: string) => {
+    let newState = { ...state, activeEnvironment: envId };
+    switch (envId) {
+      case 'warm-wood':
+        newState = { ...newState, lightBrightness: 70, temperature: 25.5, activeSound: 'campfire' };
+        break;
+      case 'fresh-mint':
+        newState = { ...newState, lightBrightness: 85, temperature: 22.0, activeSound: 'forest' };
+        break;
+      case 'deep-star':
+        newState = { ...newState, lightBrightness: 30, temperature: 20.0, activeSound: 'rain' };
+        break;
+      case 'morning-aurora':
+        newState = { ...newState, lightBrightness: 95, temperature: 23.5, activeSound: 'library' };
         break;
     }
     setState(newState);
@@ -88,7 +116,9 @@ export function PodProvider({ children }: { children: ReactNode }) {
       setLightBrightness, 
       setActiveSound, 
       setCurrentPreset,
+      setPrivacyLevel,
       applySceneMode,
+      applyEnvironmentPreset,
       updateEnv
     }}>
       {children}
